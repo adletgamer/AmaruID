@@ -8,6 +8,7 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-green)
 ![Stellar](https://img.shields.io/badge/Stellar-Testnet-blue)
 ![Offline-First](https://img.shields.io/badge/Offline--First-✓-orange)
+![Bilingual](https://img.shields.io/badge/Idiomas-Español%20%7C%20English-red)
 
 ---
 
@@ -31,17 +32,38 @@
 
 ### 🌳 ¿Qué es AMARUID?
 
-**AMARUID** es un sistema de identidad digital y reputación construido sobre **Stellar blockchain** (testnet), diseñado específicamente para comunidades indígenas amazónicas que enfrentan tres desafíos fundamentales:
+**AMARUID** es un protocolo experimental de infraestructura diseñado para permitir:
 
-| Desafío | Solución AMARUID |
-|---------|------------------|
-| 📵 **Conectividad intermitente** | Arquitectura offline-first con anclaje periódico a blockchain |
-| 🏦 **Exclusión financiera** | Identidad digital verificable que puede habilitar acceso a servicios financieros |
-| 🌱 **Conservación no reconocida** | Las acciones ambientales se traducen en reputación cuantificable |
+- ✨ Generación de identidad offline
+- 📝 Registro de eventos sin conexión
+- 🔐 Verificación criptográfica
+- 👥 Validación multi-firma
+- ⛓️ Anclaje periódico en blockchain pública (Stellar testnet)
 
-### 🎯 Propósito del Proyecto
+A diferencia de la mayoría de sistemas Web3 que asumen conectividad constante, AMARUID está diseñado para operar en entornos con conectividad intermitente o limitada.
 
-Este proyecto nace como parte de mi postulación a **Australia Awards 2026**, demostrando cómo la tecnología blockchain puede aplicarse a problemas reales de desarrollo sostenible en comunidades vulnerables.
+Este repositorio demuestra un prototipo funcional de credenciales verificables offline-first con garantías de anclaje público, aplicado específicamente a comunidades indígenas amazónicas.
+
+### 🎯 Problema
+
+La mayoría de sistemas blockchain asumen:
+
+| Supuesto | Realidad en comunidades |
+|----------|------------------------|
+| 📶 Conectividad permanente | 📵 Conectividad intermitente o nula |
+| ⚡ Interacción on-chain inmediata | ⏱️ Acceso periódico a internet |
+| 🖥️ Coordinación backend centralizada | 👥 Gobernanza comunitaria descentralizada |
+
+**AMARUID propone:** Integridad criptográfica local primero, anclaje público después.
+
+### 🧠 Principios de Diseño
+
+- 📴 **Offline-first por defecto** - Las operaciones críticas no requieren internet
+- 🔒 **Integridad criptográfica en el borde** - Los datos son seguros localmente
+- 🪶 **Huella mínima en blockchain** - Solo lo esencial va a la cadena
+- 📦 **Anclaje en batch para escalabilidad** - Agrupación de eventos
+- 👥 **Modelo compatible con gobernanza colectiva** - Validación multi-firma comunitaria
+- 🔗 **Blockchain solo donde agrega garantías reales** - Uso selectivo de la tecnología
 
 ### ✨ Características Principales
 
@@ -54,26 +76,21 @@ Este proyecto nace como parte de mi postulación a **Australia Awards 2026**, de
 | 📊 **Sistema de Reputación (MVRS)** | Puntaje basado en acciones verificadas, endosos y tiempo activo |
 | 🔗 **Verificación Pública** | Cualquier persona puede verificar la identidad y reputación en Stellar Explorer |
 
----
+### 🏗 Arquitectura del Sistema
 
-<a name="arquitectura-técnica"></a>
-## 🏗 Arquitectura Técnica
-
-El sistema implementa el protocolo **OVCAP (Offline Verifiable Credential Anchoring Protocol)** en cuatro capas:
-
-### 1️⃣ Capa de Identidad (Offline)
-- Generación de pares de claves Ed25519 en el dispositivo
+#### 1️⃣ Capa de Identidad (Offline)
+- Generación de claves Ed25519
+- Identificador derivado de la clave pública
 - Almacenamiento local cifrado
-- Identificador único derivado de la clave pública
 
-### 2️⃣ Capa de Evento (Offline)
-Cada acción de conservación genera un evento estructurado:
+#### 2️⃣ Capa de Evento (Offline)
+Cada evento contiene:
 ```json
 {
   "actor": "public_key_hash",
-  "timestamp": "ISO8601",
-  "event_type": "reforestacion|monitoreo|educacion",
-  "metadata_hash": "sha256_hash",
-  "evidence": ["foto1_hash", "foto2_hash"],
-  "location": "coordenadas"
+  "timestamp": "2024-01-15T10:30:00Z",
+  "event_type": "reforestacion",
+  "metadata_hash": "sha256_hash_de_evidencia",
+  "location": "coordenadas_gps",
+  "evidence": ["foto1_hash", "foto2_hash"]
 }
