@@ -1,7 +1,7 @@
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAppTranslation } from '@/hooks/useTranslation';
 import { MultisigConfig } from '@/components/multisig/MultisigConfig';
-import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Shield, CheckCircle2, Info } from 'lucide-react';
 import { useState } from 'react';
 import { db } from '@/lib/storage/schema';
 
@@ -24,9 +24,6 @@ export function Step2Multisig({ onNext, onBack }: Step2Props) {
     );
   }
 
-  // We need the community secret key. In a real app we'd derive this differently.
-  // For the demo, we'll store it temporarily via the setup flow.
-  // The community secret is stored in localStorage during setup only.
   const communitySecretKey = localStorage.getItem(`amaruid:secret:${community.publicKey}`) || '';
 
   const handleSuccess = async (txHash: string) => {
@@ -41,23 +38,82 @@ export function Step2Multisig({ onNext, onBack }: Step2Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{t('setup.step2_title')}</h2>
+        <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
+          <Shield className="h-6 w-6 text-blue-600" />
+          {t('setup.step2_title')}
+        </h2>
         <p className="mt-1 text-sm text-gray-600">{t('setup.step2_desc')}</p>
       </div>
 
-      {!communitySecretKey && (
-        <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
-          <p className="font-medium">Nota:</p>
-          <p>En el modo demo, la configuración multisig se simula. La clave secreta de la comunidad se genera durante el setup y se guarda temporalmente.</p>
+      {/* Explicación del Multisig */}
+      <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
+        <div className="flex items-start gap-3">
+          <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+          <div>
+            <h3 className="font-semibold text-blue-900">¿Qué es el Multisig?</h3>
+            <p className="text-sm text-blue-800 mt-1">
+              El <strong>multisig</strong> (multi-firma) protege la cuenta de la comunidad requiriendo 
+              que múltiples líderes firmen las transacciones importantes, como emitir certificados.
+            </p>
+            <ul className="text-sm text-blue-700 mt-2 space-y-1">
+              <li>• Los líderes se agregan como <strong>firmantes autorizados</strong></li>
+              <li>• Se define un <strong>umbral</strong> (ej: 2 de 3 líderes deben firmar)</li>
+              <li>• Esto previene que una sola persona actúe sin consenso</li>
+            </ul>
+          </div>
         </div>
+      </div>
+
+      {/* Estado actual */}
+      <div className="rounded-lg bg-gray-50 p-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">Estado actual:</h4>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <span>Comunidad: <strong>{community.name}</strong></span>
+          </div>
+          <div className="flex items-center gap-2">
+            {leaders.length >= 2 ? (
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+            )}
+            <span>Líderes: <strong>{leaders.length}</strong> {leaders.length < 2 && '(mínimo 2 requeridos)'}</span>
+          </div>
+        </div>
+      </div>
+
+      {!communitySecretKey ? (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+          <p className="font-medium flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Clave secreta no encontrada
+          </p>
+          <p className="mt-1">
+            La clave secreta de la comunidad no está disponible. Esto puede ocurrir si la comunidad 
+            fue creada en otra sesión. Vuelve al paso 1 y crea una nueva comunidad.
+          </p>
+        </div>
+      ) : (
+        <MultisigConfig
+          community={community}
+          communitySecretKey={communitySecretKey}
+          leaders={leaders}
+          onSuccess={handleSuccess}
+        />
       )}
 
-      <MultisigConfig
-        community={community}
-        communitySecretKey={communitySecretKey}
-        leaders={leaders}
-        onSuccess={handleSuccess}
-      />
+      {done && (
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
+          <div className="flex items-center gap-2 text-emerald-700">
+            <CheckCircle2 className="h-5 w-5" />
+            <span className="font-semibold">¡Multisig configurado exitosamente!</span>
+          </div>
+          <p className="text-sm text-emerald-600 mt-1">
+            Ahora los líderes pueden firmar transacciones en nombre de la comunidad.
+          </p>
+        </div>
+      )}
 
       <div className="flex justify-between pt-4">
         <button

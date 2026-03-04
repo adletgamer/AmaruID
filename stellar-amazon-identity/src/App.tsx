@@ -17,6 +17,7 @@ import { MemberProfile } from '@/pages/Explorer/MemberProfile';
 import { DemoPage } from '@/pages/Demo/index';
 import { LoginPage } from '@/pages/Auth/Login';
 import { SignUpPage } from '@/pages/Auth/SignUp';
+import CryptoDemo from '@/pages/CryptoDemo';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/explorer" element={<ExplorerPage />} />
                 <Route path="/explorer/:publicKey" element={<MemberProfile />} />
                 <Route path="/demo" element={<DemoPage />} />
+                <Route path="/crypto-demo" element={<CryptoDemo />} />
               </Route>
             </Routes>
           </OfflineProvider>

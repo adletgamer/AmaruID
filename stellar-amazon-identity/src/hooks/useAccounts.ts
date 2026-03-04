@@ -34,6 +34,8 @@ export function useAccounts() {
           createdAt: new Date().toISOString(),
           funded,
         };
+        // IMPORTANTE: Guardar la clave secreta para configurar multisig después
+        localStorage.setItem(`amaruid:secret:${keypair.publicKey}`, keypair.secretKey);
         await saveCommunity(account);
         await refreshAccounts();
         return account;

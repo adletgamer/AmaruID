@@ -3,7 +3,8 @@ import { useAccounts } from '@/hooks/useAccounts';
 import { useAppTranslation } from '@/hooks/useTranslation';
 import { AccountCreator } from '@/components/accounts/AccountCreator';
 import { AccountList } from '@/components/accounts/AccountList';
-import { AlertCircle, CheckCircle2, Users, Shield, User } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Users, Shield, User, Trash2, RefreshCw } from 'lucide-react';
+import { db } from '@/lib/storage/schema';
 
 interface Step1Props {
   onNext: () => void;
@@ -11,19 +12,75 @@ interface Step1Props {
 
 export function Step1Accounts({ onNext }: Step1Props) {
   const { t } = useAppTranslation();
-  const { community, leaders, members, createCommunity, createLeader, createMember, loading, error } = useAccounts();
+  const { community, leaders, members, createCommunity, createLeader, createMember, loading, error, refreshAccounts } = useAccounts();
   const [communityDesc, setCommunityDesc] = useState('Comunidad indígena amazónica protectora de la selva');
+  const [resetting, setResetting] = useState(false);
 
   const canProceed = community && leaders.length >= 2 && members.length >= 1;
 
+  const handleResetDemo = async () => {
+    if (!confirm('¿Estás seguro de que quieres reiniciar la demo? Se eliminarán TODOS los datos (comunidad, líderes, miembros).')) {
+      return;
+    }
+    setResetting(true);
+    try {
+      // Clear all tables
+      await db.communities.clear();
+      await db.leaders.clear();
+      await db.members.clear();
+      await db.signedEvents.clear();
+      await db.anchorProofs.clear();
+      await db.merkleProofs.clear();
+      await db.actions.clear();
+      await db.reputationScores.clear();
+      await db.reputationEvents.clear();
+      
+      // Clear localStorage secrets
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('amaruid:')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Refresh accounts
+      await refreshAccounts();
+      
+      // Reload page to reset all state
+      window.location.reload();
+    } catch (err) {
+      console.error('Error resetting demo:', err);
+      alert('Error al reiniciar: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
-          <Users className="h-5 w-5 text-emerald-600" />
-          {t('setup.step1_title')}
-        </h2>
-        <p className="mt-1 text-sm text-gray-600">{t('setup.step1_desc')}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
+            <Users className="h-5 w-5 text-emerald-600" />
+            {t('setup.step1_title')}
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">{t('setup.step1_desc')}</p>
+        </div>
+        <button
+          onClick={handleResetDemo}
+          disabled={resetting}
+          className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+          title="Reiniciar demo - eliminar todos los datos"
+        >
+          {resetting ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+          Reiniciar Demo
+        </button>
       </div>
 
       {error && (

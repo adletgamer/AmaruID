@@ -44,7 +44,30 @@ export async function issueCertificate(
   try {
     const server = getServer();
     const asset = new StellarSdk.Asset(COMMCERT_CODE, issuerPublicKey);
+    
+    // Load the community account to check thresholds
     const sourceAccount = await server.loadAccount(issuerPublicKey);
+    
+    // Check if we have enough signers
+    const medThreshold = sourceAccount.thresholds.med_threshold;
+    if (issuerSecretKeys.length < medThreshold) {
+      return {
+        success: false,
+        error: `Not enough signers: need ${medThreshold}, have ${issuerSecretKeys.length}`,
+      };
+    }
+
+    // Verify all secret keys are valid signers for this account
+    const signerPublicKeys = sourceAccount.signers.map(s => s.key);
+    for (const secret of issuerSecretKeys) {
+      const kp = keypairFromSecret(secret);
+      if (!signerPublicKeys.includes(kp.publicKey())) {
+        return {
+          success: false,
+          error: `Signer ${kp.publicKey().substring(0, 8)}... is not authorized for this account`,
+        };
+      }
+    }
 
     const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
       fee: StellarSdk.BASE_FEE,
@@ -75,6 +98,17 @@ export async function issueCertificate(
     const result = await server.submitTransaction(transaction);
     return { success: true, hash: result.hash, ledger: result.ledger };
   } catch (error) {
+    // Extract more detailed error from Stellar
+    if (error && typeof error === 'object' && 'response' in error) {
+      const stellarError = error as { response?: { data?: { extras?: { result_codes?: unknown } } } };
+      const resultCodes = stellarError.response?.data?.extras?.result_codes;
+      if (resultCodes) {
+        return {
+          success: false,
+          error: `Stellar error: ${JSON.stringify(resultCodes)}`,
+        };
+      }
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error issuing certificate',

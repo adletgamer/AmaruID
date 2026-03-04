@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { MemberAccount, LeaderAccount, CommunityAccount } from '@/types/account';
 import { createTrustline, issueCertificate, COMMCERT_CODE } from '@/lib/stellar/assets';
-import { Loader2, Award, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { getServer } from '@/lib/stellar/client';
+import { Loader2, Award, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
 interface IssueCertificateProps {
   member: MemberAccount;
@@ -10,10 +11,41 @@ interface IssueCertificateProps {
   onSuccess: () => void;
 }
 
+interface MultisigStatus {
+  configured: boolean;
+  signerCount: number;
+  threshold: number;
+  leadersAreSigners: boolean;
+}
+
 export function IssueCertificate({ member, community, leaders, onSuccess }: IssueCertificateProps) {
   const [step, setStep] = useState<'trustline' | 'issue' | 'done'>('trustline');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [multisigStatus, setMultisigStatus] = useState<MultisigStatus | null>(null);
+
+  // Check multisig status on mount
+  useEffect(() => {
+    async function checkMultisig() {
+      try {
+        const server = getServer();
+        const account = await server.loadAccount(community.publicKey);
+        const signerKeys = account.signers.map(s => s.key);
+        const leaderKeys = leaders.map(l => l.publicKey);
+        const leadersAreSigners = leaderKeys.every(k => signerKeys.includes(k));
+        
+        setMultisigStatus({
+          configured: account.thresholds.med_threshold > 0,
+          signerCount: account.signers.length,
+          threshold: account.thresholds.med_threshold,
+          leadersAreSigners,
+        });
+      } catch (err) {
+        console.error('Error checking multisig:', err);
+      }
+    }
+    checkMultisig();
+  }, [community.publicKey, leaders]);
 
   const handleTrustline = async () => {
     setLoading(true);
@@ -66,6 +98,31 @@ export function IssueCertificate({ member, community, leaders, onSuccess }: Issu
         <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
+        </div>
+      )}
+
+      {multisigStatus && !multisigStatus.leadersAreSigners && (
+        <div className="flex items-start gap-2 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">
+          <Info className="h-4 w-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Multisig no configurado</p>
+            <p className="text-xs mt-1">
+              Los líderes no están configurados como firmantes de la cuenta de comunidad. 
+              Configura el multisig primero en la sección de configuración.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {multisigStatus && multisigStatus.leadersAreSigners && leaders.length < multisigStatus.threshold && (
+        <div className="flex items-start gap-2 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">
+          <Info className="h-4 w-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Firmantes insuficientes</p>
+            <p className="text-xs mt-1">
+              Se requieren {multisigStatus.threshold} firmas pero solo hay {leaders.length} líderes disponibles.
+            </p>
+          </div>
         </div>
       )}
 
